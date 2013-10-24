@@ -1,0 +1,97 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="/css/normalize.css" />
+  		<link rel="stylesheet" href="/css/foundation.css" />
+  		<script src="/js/custom.modernizr.js"></script>
+	</head>
+	<body>
+
+		<nav class="top-bar" style="">
+
+			<ul class="title-area">
+				<li class="name"><h1><a href="#">King's Cup</a></h1></li>
+				<li class="toggle-topbar menu-icon"><a href=""><span>Menu</span></a></li>
+			</ul>
+
+			<section class="top-bar-section">
+				<ul class="left">
+					<li class="divider"></li>
+					<li><a id="newGame" href="#">New Game</a></li>
+					<li class="divider hide-for-small"></li>
+				</ul>
+
+				<ul class="right">
+					<li class="divider"></li>
+					<li><a href="#">Quit</a></li>
+				</ul>
+			</section>
+		</nav>
+
+		<hr>
+
+		<div class="container text-center">
+			<div class="row">
+				<div class="large-12 columns">
+					Players: <b id="playerCount">0</b>
+					<hr>
+					Current Turn: <b id="currentTurn"></b>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="large-12 columns">
+					<img id="card" src="/images/ls.png">
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="large-12 columns">
+					<div class="panel">
+						<h6 id="cardName"></h6>
+						<p id="cardRule"></p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script src="/js/jquery.js"></script>
+		<script src="/js/foundation.js"></script>
+		<script src="http://game.dev:3000/socket.io/socket.io.js"></script>
+		<script>
+			$(document).foundation();
+
+			var socket = io.connect('http://game.dev:3000');
+
+			var player;
+
+			socket.on('updatePlayerCount', function (playerCount) {
+				$('#playerCount').html(playerCount);
+			});
+
+			socket.on('setPlayerId', function (id) {
+				player = id;
+			});
+
+			socket.on('newTurn', function (data) {
+				$('#currentTurn').html(data.player);
+				$('#card').off('click');
+				if(player === data.player) {
+					$('#card').on('click', function(){
+						$('#card').attr('src', '/images/cards/' + data.card.path);
+						$('#cardName').html(data.card.name);
+						$('#cardRule').html(data.card.rule);
+						socket.emit('turnDone');
+					});
+				} else {
+					$('#card').off('click', function(){
+						alert('BIND OFF');
+					});
+				}
+			});
+
+			$('#newGame').click(function(){
+				socket.emit('newGame');
+			});
+		</script>
+	</body>
+</html>
