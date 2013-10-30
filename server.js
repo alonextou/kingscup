@@ -40,6 +40,10 @@ io.sockets.on('connection', function (socket) {
 		socket.emit('updatePlayerCount', playerCount);
 	});
 
+	socket.on('getPlayerCount', function() {
+		return playerCount;
+	});
+
 	// new game
 	socket.on('newGame', function() {
 
