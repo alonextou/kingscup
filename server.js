@@ -21,30 +21,105 @@ app.get('/', function (req, res) {
 });
 
 var playerCount = 0;
+var gameInProgress = false;
+var countDeck = 0;
+var playerTurn = 0;
+
+io.sockets.on('newGame', function () {
+
+});
+
 io.sockets.on('connection', function (socket) {
 
 	// player join
-	console.log('connected');
-	playerCount++;
-	console.log(playerCount);
-	socket.emit('setPlayerId', socket.id);
-	socket.emit('updatePlayerCount', playerCount);
-
-	players[playerCount] = socket.id;
+	console.log('connect');
+	socket.emit('getPlayer');
+	socket.on('setPlayer', function(player){
+		player.id = socket.id;
+		player.turn = getPlayerCount(players) + 1;
+		players[socket.id] = player;
+		console.log(players);
+		io.sockets.emit('updatePlayerCount', playerCount);
+	});
 
 	// player leave
 	socket.on('disconnect', function() {
-		console.log('disconnected');
-		playerCount--;
-		console.log(playerCount);
-		socket.emit('updatePlayerCount', playerCount);
+		delete players[socket.id]
+		var count = 1;
+		for (i in players){
+			players[i].turn = count;
+			count++;
+		}
+		console.log(players);
+		io.sockets.emit('updatePlayerCount', playerCount);
 	});
 
-	socket.on('getPlayerCount', function() {
-		return playerCount;
+	/*
+	console.log('connected');
+	playerCount++;
+	console.log(playerCount);
+
+	socket.emit('setPlayerId', socket.id);
+	socket.emit('getPlayer');
+	socket.on('setPlayerName', function(playerName){
+		players[socket.id] = playerName;
 	});
+	*/
+
+	//socket.broadcast.emit('updatePlayerCount', playerCount);
+	//console.log(players[socket.id])
 
 	// new game
+	socket.on('newGame', function() {
+		if(gameInProgress === true){
+			console.log('Game already in progress');
+		} else {
+			gameInProgress = true;
+			deck = shuffle(cards);
+
+			var loopDeck = function() {
+				var card = deck[countDeck];
+				for (var i = 0; i < players.length; i++){
+					if(players[i].turn === playerTurn){
+						var id = players[i].id;
+						io.sockets.socket(id).emit('yourTurn', card);
+						socket.broadcast.emit('newTurn', players[i]);
+					}
+				}
+			}
+
+			socket.on('turnDone', function() {
+				countDeck++;
+				playerTurn++;
+				console.log(playerTurn);
+				if (playerTurn === players.length) {
+					playerTurn = 0;
+				}
+				loopDeck();
+			});
+
+			loopDeck();
+
+/*
+			deck.forEach(function(card){
+				if (playerTurn === playerCount) {
+					playerTurn = 0;
+				} else {
+					playerTurn++;
+				}
+				for(var i in players) {
+					if(players[i].turn === playerTurn){
+						console.log('Player turn: ' + players[i]);
+						socket.emit('yourTurn', card);
+						socket.broadcast.emit('newTurn', players[i]);
+					}
+				}
+			});
+*/
+		}
+	});
+
+	/*
 	socket.on('newGame', function() {
 
 		console.log('newGame');
@@ -85,6 +160,7 @@ io.sockets.on('connection', function (socket) {
 			});
 		}
 		loopDeck(deck);
+		*/
 
 /*
 		deck.forEach(function(card){
@@ -101,12 +177,52 @@ io.sockets.on('connection', function (socket) {
 				
 			});
 		});
-*/
+
 
 	});
-
+*/
 });
 
+var loopDeck = function(deck, socket) {
+	var self = this;
+	newTurn(deck[countDeck], function(){
+		countDeck++;
+		if (playerTurn === playerCount) {
+			playerTurn = 0;
+		} else {
+			playerTurn++;
+		}
+		if (countDeck < deck.length) {
+			console.log('LOOPING DECK');
+			loopDeck(deck);
+		} else {
+			gameInProgress = false;
+			console.log('GAME OVER');
+		}
+	});
+	function newTurn(card, callback) {
+		console.log(card);
+		for(var i in players) {
+			if(players[i].turn === playerTurn){
+				console.log('Player turn: ' + players[i].name);
+				socket.broadcast.emit('newTurn', players[i]);
+				socket.emit('yourTurn', card);
+			}
+		}
+		socket.on('turnDone', function() {
+			console.log('calling back');
+			callback();
+		});
+	}
+}
+
+function getPlayerCount(players) {
+  var count = 0;
+  for(var player in players) {
+  	count++;
+  }
+  return count;
+}
 
 //+ Jonas Raoni Soares Silva
 //@ http://jsfromhell.com/array/shuffle [v1.0]
