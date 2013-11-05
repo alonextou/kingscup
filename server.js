@@ -20,14 +20,9 @@ app.get('/', function (req, res) {
 	res.sendfile(__dirname + '/index.html');
 });
 
-var playerCount = 0;
 var gameInProgress = false;
 var countDeck = 0;
 var playerTurn = 0;
-
-io.sockets.on('newGame', function () {
-
-});
 
 io.sockets.on('connection', function (socket) {
 
@@ -39,7 +34,7 @@ io.sockets.on('connection', function (socket) {
 		player.turn = getPlayerCount(players) + 1;
 		players[socket.id] = player;
 		console.log(players);
-		io.sockets.emit('updatePlayerCount', playerCount);
+		io.sockets.emit('updatePlayerCount', getPlayerCount(players));
 	});
 
 	// player leave
@@ -51,7 +46,7 @@ io.sockets.on('connection', function (socket) {
 			count++;
 		}
 		console.log(players);
-		io.sockets.emit('updatePlayerCount', playerCount);
+		io.sockets.emit('updatePlayerCount', getPlayerCount(players));
 	});
 
 	/*
@@ -74,13 +69,17 @@ io.sockets.on('connection', function (socket) {
 		if(gameInProgress === true){
 			console.log('Game already in progress');
 		} else {
+			console.log(players);
+			console.log('Starting new game');
 			gameInProgress = true;
 			deck = shuffle(cards);
 
 			var loopDeck = function() {
 				var card = deck[countDeck];
-				for (var i = 0; i < players.length; i++){
-					if(players[i].turn === playerTurn){
+				for(var i in players) {
+					console.log(players[i]);
+					console.log(playerTurn);
+					if(players[i].turn === playerTurn + 1){
 						var id = players[i].id;
 						io.sockets.socket(id).emit('yourTurn', card);
 						socket.broadcast.emit('newTurn', players[i]);
@@ -92,7 +91,7 @@ io.sockets.on('connection', function (socket) {
 				countDeck++;
 				playerTurn++;
 				console.log(playerTurn);
-				if (playerTurn === players.length) {
+				if (playerTurn === getPlayerCount(players)) {
 					playerTurn = 0;
 				}
 				loopDeck();
@@ -182,39 +181,6 @@ io.sockets.on('connection', function (socket) {
 	});
 */
 });
-
-var loopDeck = function(deck, socket) {
-	var self = this;
-	newTurn(deck[countDeck], function(){
-		countDeck++;
-		if (playerTurn === playerCount) {
-			playerTurn = 0;
-		} else {
-			playerTurn++;
-		}
-		if (countDeck < deck.length) {
-			console.log('LOOPING DECK');
-			loopDeck(deck);
-		} else {
-			gameInProgress = false;
-			console.log('GAME OVER');
-		}
-	});
-	function newTurn(card, callback) {
-		console.log(card);
-		for(var i in players) {
-			if(players[i].turn === playerTurn){
-				console.log('Player turn: ' + players[i].name);
-				socket.broadcast.emit('newTurn', players[i]);
-				socket.emit('yourTurn', card);
-			}
-		}
-		socket.on('turnDone', function() {
-			console.log('calling back');
-			callback();
-		});
-	}
-}
 
 function getPlayerCount(players) {
   var count = 0;
