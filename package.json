@@ -1,0 +1,10 @@
+{
+	"name": "cardgames",
+	"description": "Card Games",
+	"version": "0.0.1",
+	"private": true,
+	"dependencies": {
+		"express": "4.7.2",
+		"socket.io": "1.0.6"
+	}
+}

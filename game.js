@@ -2,7 +2,7 @@ $(document).foundation();
 
 $(document).ready(function() {
 
-	var socket = io.connect('http://game.dev:3000');
+	var socket = io.connect('http://cardgames.dev:3000');
 
 	var players = [];
 	var player = {};

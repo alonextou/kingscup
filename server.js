@@ -8,6 +8,8 @@ var fs = require('fs');
 
 server.listen(3000);
 
+console.log('server started');
+
 var players = [];
 var cards = fs.readFileSync('./cards.json');
 cards = JSON.parse(cards);
